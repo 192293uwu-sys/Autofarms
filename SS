@@ -1,0 +1,319 @@
+-- Place this in StarterPlayer > StarterCharacterScripts (LocalScript)
+-- Or run it in the command bar while your character is spawned.
+
+task.wait(4)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- Only run for this username
+if player.Name ~= "tewf4vz" then
+	return
+end
+
+-- =========================================================
+-- Fire the start event once at the beginning
+-- =========================================================
+do
+	local startEvent = game:GetService("ReplicatedStorage").remotes.changeStartValue
+	local ok, err = pcall(function()
+		startEvent:FireServer()
+	end)
+	if not ok then
+		warn("[StartEvent] Failed to fire: " .. tostring(err))
+	end
+end
+
+-- =========================================================
+-- Ability loop: alternate between two abilities every 3s
+-- =========================================================
+task.spawn(function()
+	local backpack = player:WaitForChild("Backpack")
+	local useFirst = true
+
+	while true do
+		task.wait(3)
+
+		local ok, err = pcall(function()
+			if useFirst then
+				-- Ability #1: second child of Backpack
+				local tool = backpack:GetChildren()[2]
+				if tool and tool:FindFirstChild("abilityEvent") then
+					tool.abilityEvent:FireServer()
+				end
+			else
+				-- Ability #2: "Pulse Waves" tool
+				local tool = backpack:FindFirstChild("Pulse Waves")
+				if tool and tool:FindFirstChild("abilityEvent") then
+					tool.abilityEvent:FireServer()
+				end
+			end
+		end)
+
+		if not ok then
+			warn("[AbilityLoop] " .. tostring(err))
+		end
+
+		useFirst = not useFirst
+	end
+end)
+
+-- =========================================================
+-- Waypoint walker
+-- =========================================================
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Waypoint list (in order)
+local waypoints = {
+	Vector3.new(324.610, 169.084, 165.399),
+	Vector3.new(315.851, 169.771, 126.353),
+	Vector3.new(315.767, 174.677, 114.506),
+	Vector3.new(317.927, 174.611, 78.850),
+	Vector3.new(318.270, 185.354, -10.721),
+	Vector3.new(318.490, 209.722, -75.031),
+	Vector3.new(312.521, 211.261, -97.033),
+	Vector3.new(279.420, 216.798, -143.307),
+	Vector3.new(271.612, 210.370, -175.659),
+	Vector3.new(280.547, 203.315, -212.103),
+	Vector3.new(295.569, 210.202, -236.376),
+	Vector3.new(316.618, 210.306, -257.828),
+	Vector3.new(292.873, 210.217, -237.647),
+	Vector3.new(274.552, 203.520, -206.594),
+	Vector3.new(270.835, 210.396, -174.859),
+	Vector3.new(249.838, 210.177, -171.383),
+	Vector3.new(207.706, 183.569, -172.297),
+	Vector3.new(169.236, 167.486, -172.074),
+	Vector3.new(143.263, 159.418, -171.923),
+	Vector3.new(91.540, 148.830, -172.423),
+	Vector3.new(76.691, 148.977, -172.778),
+	Vector3.new(68.700, 146.942, -198.521),
+	Vector3.new(57.451, 141.864, -216.379),
+	Vector3.new(41.531, 136.203, -227.490),
+	Vector3.new(25.028, 135.443, -228.163),
+	Vector3.new(18.538, 135.445, -218.205),
+	Vector3.new(14.693, 135.442, -212.022),
+	Vector3.new(12.397, 134.556, -208.730),
+	Vector3.new(10.014, 133.080, -205.767),
+	Vector3.new(7.986, 129.785, -203.364),
+	Vector3.new(5.913, 128.972, -200.864),
+	Vector3.new(3.804, 127.390, -198.212),
+	Vector3.new(1.843, 124.623, -195.686),
+	Vector3.new(0.044, 122.551, -193.254),
+	Vector3.new(-1.751, 120.450, -190.481),
+	Vector3.new(-3.483, 118.361, -187.124),
+	Vector3.new(-4.834, 116.518, -183.913),
+	Vector3.new(-5.988, 115.448, -180.271),
+	Vector3.new(-6.693, 113.674, -176.408),
+	Vector3.new(-6.994, 112.314, -172.861),
+	Vector3.new(-6.987, 110.468, -169.296),
+	Vector3.new(-6.197, 109.126, -165.710),
+	Vector3.new(-4.597, 108.134, -162.490),
+	Vector3.new(-2.687, 106.131, -159.964),
+	Vector3.new(0.108, 104.932, -157.145),
+	Vector3.new(3.175, 103.391, -155.129),
+	Vector3.new(6.932, 102.003, -153.593),
+	Vector3.new(11.124, 100.614, -153.011),
+	Vector3.new(14.644, 99.311, -154.277),
+	Vector3.new(17.734, 97.584, -157.050),
+	Vector3.new(19.977, 95.389, -159.552),
+	Vector3.new(22.333, 93.000, -162.333),
+	Vector3.new(24.630, 90.652, -165.083),
+	Vector3.new(26.739, 88.730, -167.797),
+	Vector3.new(28.910, 86.735, -170.711),
+	Vector3.new(31.180, 85.368, -173.989),
+	Vector3.new(33.305, 83.678, -177.217),
+	Vector3.new(35.235, 82.412, -180.277),
+	Vector3.new(37.208, 80.958, -183.470),
+	Vector3.new(39.204, 79.193, -186.745),
+	Vector3.new(41.227, 77.612, -190.068),
+	Vector3.new(43.175, 76.047, -193.226),
+	Vector3.new(45.280, 74.533, -196.556),
+	Vector3.new(47.413, 72.890, -199.788),
+	Vector3.new(49.679, 71.606, -203.221),
+	Vector3.new(52.155, 70.111, -206.921),
+	Vector3.new(54.421, 69.154, -210.218),
+	Vector3.new(57.108, 67.942, -213.994),
+	Vector3.new(59.821, 66.589, -217.579),
+	Vector3.new(62.603, 65.796, -221.128),
+	Vector3.new(65.289, 65.574, -224.363),
+	Vector3.new(90.840, 60.706, -254.784),
+	Vector3.new(116.111, 61.050, -284.741),
+	Vector3.new(160.012, 58.706, -336.089),
+	Vector3.new(124.303, 61.706, -289.159),
+	Vector3.new(76.509, 60.706, -288.729),
+	Vector3.new(54.890, 60.706, -295.375),
+	Vector3.new(57.715, 61.633, -321.340),
+	Vector3.new(93.106, 58.706, -499.404),
+	Vector3.new(101.140, 58.706, -540.314),
+	Vector3.new(92.813, 58.706, -498.074),
+	Vector3.new(50.835, 60.706, -302.026),
+	Vector3.new(-14.195, 60.706, -300.998),
+	Vector3.new(-22.778, 60.637, -332.826),
+	Vector3.new(-29.461, 58.706, -375.906),
+	Vector3.new(-17.846, 60.706, -300.982),
+	Vector3.new(-88.161, 60.706, -284.488),
+	Vector3.new(-129.572, 60.706, -269.035),
+	Vector3.new(-189.889, 60.706, -185.457),
+	Vector3.new(-222.357, 58.529, -169.078),
+	Vector3.new(-317.013, 56.679, -138.255),
+	Vector3.new(-363.671, 56.297, -123.084),
+	Vector3.new(-313.993, 56.478, -139.003),
+	Vector3.new(-237.088, 56.419, -157.179),
+	Vector3.new(-189.471, 60.706, -168.563),
+	Vector3.new(-140.996, 60.706, -110.931),
+	Vector3.new(-90.839, 60.706, -39.838),
+	Vector3.new(-77.311, 60.706, -5.431),
+	Vector3.new(-123.865, 58.089, 14.559),
+	Vector3.new(-192.099, 58.089, 37.274),
+	Vector3.new(-68.902, 60.706, 6.648),
+	Vector3.new(-52.790, 60.706, 97.771),
+	Vector3.new(-47.194, 60.706, 156.300),
+	Vector3.new(-71.933, 64.960, 183.049),
+	Vector3.new(-136.895, 47.243, 238.388),
+	Vector3.new(-198.317, 49.892, 299.975),
+	Vector3.new(-171.297, 50.283, 269.049),
+	Vector3.new(-134.250, 52.743, 268.980),
+	Vector3.new(-127.284, 53.271, 269.345),
+	Vector3.new(-120.663, 55.100, 270.001),
+	Vector3.new(-113.627, 56.995, 271.756),
+	Vector3.new(-107.176, 58.962, 273.968),
+	Vector3.new(-101.169, 60.700, 276.862),
+	Vector3.new(-96.909, 62.997, 280.892),
+	Vector3.new(-93.564, 65.278, 286.017),
+	Vector3.new(-91.504, 67.772, 291.616),
+	Vector3.new(-90.838, 70.237, 297.911),
+	Vector3.new(-91.773, 71.836, 303.902),
+	Vector3.new(-94.242, 73.396, 309.426),
+	Vector3.new(-97.449, 77.058, 313.840),
+	Vector3.new(-101.397, 79.704, 317.572),
+	Vector3.new(-106.549, 82.449, 321.363),
+	Vector3.new(-111.493, 84.384, 324.595),
+	Vector3.new(-116.496, 86.794, 327.791),
+	Vector3.new(-122.173, 88.616, 330.829),
+	Vector3.new(-127.413, 89.888, 333.173),
+	Vector3.new(-133.796, 91.704, 336.154),
+	Vector3.new(-139.276, 92.724, 339.152),
+	Vector3.new(-144.472, 92.992, 342.214),
+	Vector3.new(-149.994, 93.000, 345.850),
+	Vector3.new(-154.626, 93.000, 349.258),
+	Vector3.new(-159.997, 93.000, 353.275),
+	Vector3.new(-164.501, 93.000, 356.849),
+	Vector3.new(-169.103, 93.000, 360.609),
+	Vector3.new(-172.831, 93.726, 363.683),
+	Vector3.new(-177.830, 96.379, 368.303),
+	Vector3.new(-181.575, 99.813, 372.184),
+	Vector3.new(-184.807, 103.064, 376.120),
+	Vector3.new(-187.843, 106.794, 382.612),
+	Vector3.new(-189.839, 109.036, 387.590),
+	Vector3.new(-192.276, 110.817, 393.844),
+	Vector3.new(-194.067, 113.131, 399.216),
+	Vector3.new(-195.478, 114.581, 404.729),
+	Vector3.new(-196.853, 116.680, 411.260),
+	Vector3.new(-197.638, 119.815, 416.911),
+	Vector3.new(-198.115, 120.998, 423.226),
+	Vector3.new(-198.419, 123.670, 428.776),
+	Vector3.new(-198.409, 125.574, 434.484),
+	Vector3.new(-197.987, 127.981, 440.621),
+	Vector3.new(-197.249, 129.059, 446.618),
+	Vector3.new(-196.318, 130.105, 452.657),
+	Vector3.new(-195.214, 132.595, 458.337),
+	Vector3.new(-193.712, 134.108, 464.421),
+	Vector3.new(-191.458, 135.298, 470.733),
+	Vector3.new(-189.300, 136.098, 476.211),
+	Vector3.new(-187.159, 136.722, 481.305),
+	Vector3.new(-184.875, 137.265, 485.905),
+	Vector3.new(-182.088, 138.082, 490.531),
+	Vector3.new(-178.398, 138.862, 495.220),
+	Vector3.new(-173.401, 139.453, 500.331),
+	Vector3.new(-169.638, 138.821, 503.823),
+	Vector3.new(-165.219, 139.155, 507.148),
+	Vector3.new(-160.764, 139.512, 510.084),
+	Vector3.new(-155.536, 139.838, 513.241),
+	Vector3.new(-149.679, 140.202, 516.044),
+	Vector3.new(-142.771, 141.095, 518.736),
+	Vector3.new(-137.668, 141.074, 520.684),
+	Vector3.new(-131.898, 140.971, 522.730),
+	Vector3.new(-126.063, 140.998, 524.618),
+	Vector3.new(-120.253, 140.989, 526.247),
+	Vector3.new(-114.978, 140.979, 527.231),
+	Vector3.new(-108.433, 140.907, 528.140),
+	Vector3.new(-103.371, 140.912, 527.901),
+	Vector3.new(-96.746, 140.831, 525.280),
+	Vector3.new(-92.785, 140.570, 522.281),
+	Vector3.new(-89.172, 140.708, 518.085),
+	Vector3.new(-86.544, 140.968, 513.204),
+	Vector3.new(-84.565, 140.792, 507.817),
+	Vector3.new(-83.067, 140.713, 501.675),
+	Vector3.new(-81.909, 140.635, 495.853),
+	Vector3.new(-81.144, 140.802, 490.252),
+	Vector3.new(-80.408, 140.802, 484.840),
+	Vector3.new(-79.298, 140.621, 477.350),
+	Vector3.new(-78.500, 140.789, 471.656),
+	Vector3.new(-77.715, 140.802, 465.959),
+	Vector3.new(-76.774, 140.880, 459.124),
+	Vector3.new(-75.767, 140.653, 451.813),
+	Vector3.new(-74.891, 140.798, 445.452),
+}
+
+-- Tuning
+local REACH_DISTANCE = 4       -- How close (studs) counts as "reached"
+local STUCK_TIMEOUT = 8        -- Seconds without progress before giving up on a point
+local MAX_TOTAL_TIME = 2400    -- Safety cap for whole run
+local UPDATE_INTERVAL = 0.1    -- Wait between MoveTo calls
+
+local function walkTo(target)
+	local lastPos = rootPart.Position
+	local lastProgressTime = os.clock()
+
+	while true do
+		if not character.Parent or not humanoid.Parent or humanoid.Health <= 0 then
+			return false, "died"
+		end
+
+		local currentPos = rootPart.Position
+		local distance = (Vector3.new(currentPos.X, 0, currentPos.Z) 
+		                 - Vector3.new(target.X, 0, target.Z)).Magnitude
+
+		if distance <= REACH_DISTANCE then
+			humanoid:MoveTo(currentPos) -- stop
+			return true
+		end
+
+		-- Detect no progress
+		if (currentPos - lastPos).Magnitude > 1 then
+			lastPos = currentPos
+			lastProgressTime = os.clock()
+		elseif os.clock() - lastProgressTime > STUCK_TIMEOUT then
+			humanoid:MoveTo(currentPos)
+			return false, "stuck"
+		end
+
+		humanoid:MoveTo(target)
+		task.wait(UPDATE_INTERVAL)
+	end
+end
+
+-- Main loop
+local runStart = os.clock()
+for i, pos in ipairs(waypoints) do
+	if os.clock() - runStart > MAX_TOTAL_TIME then
+		warn("[WaypointWalker] Max total time reached, stopping.")
+		break
+	end
+
+	print(string.format("[WaypointWalker] Walking to #%d: %s", i, tostring(pos)))
+	local ok, reason = walkTo(pos)
+
+	if ok then
+		print(string.format("[WaypointWalker] Reached #%d", i))
+	else
+		warn(string.format("[WaypointWalker] Failed to reach #%d (%s)", i, reason or "unknown"))
+		if reason == "died" then break end
+	end
+end
+
+print("[WaypointWalker] Done.")
