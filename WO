@@ -34,7 +34,7 @@ task.spawn(function()
 	local useFirst = true
 
 	while true do
-		task.wait(3.25)
+		task.wait(3)
 
 		local ok, err = pcall(function()
 			if useFirst then
