@@ -40,14 +40,14 @@ task.spawn(function()
 			if useFirst then
 				-- Ability #1: second child of Backpack
 				local tool = backpack:GetChildren()[2]
-				if tool and tool:FindFirstChild("abilityEvent") then
-					tool.abilityEvent:FireServer()
+				if tool and tool:FindFirstChild("spellEvent") then
+					tool.spellEvent:FireServer()
 				end
 			else
 				-- Ability #2: "Pulse Waves" tool
 				local tool = backpack:FindFirstChild("Arrow Rain")
-				if tool and tool:FindFirstChild("abilityEvent") then
-					tool.abilityEvent:FireServer()
+				if tool and tool:FindFirstChild("spellEvent") then
+					tool.spellEvent:FireServer()
 				end
 			end
 		end)
