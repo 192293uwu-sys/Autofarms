@@ -2128,3 +2128,39 @@ task.spawn(function()
 
 	print("[PathPlayer] Reached the end of the path.")
 end)
+
+local firedForCharacter = nil
+
+local function fireReplayDungeon()
+	local Event = game:GetService("ReplicatedStorage").remotes.replayDungeon
+	local ok, err = pcall(function()
+		Event:FireServer({
+        		dungeonProgress = "finished",
+        		dungeonStarted = true,
+        		dungeonFinished = true,
+        		hardcore = true,
+        		dungeonName = "Aquatic Temple",
+        		isHardcore = true,
+        		fightingBoss = false
+		})
+	end)
+	if not ok then
+		warn("[DeathReplay] Failed to fire replayDungeon: " .. tostring(err))
+	end
+end
+
+local function hookDeath(char)
+	if not char or firedForCharacter == char then return end
+	firedForCharacter = char
+
+	local hum = char:WaitForChild("Humanoid", 10)
+	if not hum then return end
+
+	hum.Died:Connect(function()
+		fireReplayDungeon()
+	end)
+end
+
+-- Hook the current character and every future one (respawns)
+hookDeath(character)
+player.CharacterAdded:Connect(hookDeath)
