@@ -34,7 +34,7 @@ task.spawn(function()
 	local useFirst = true
 
 	while true do
-		task.wait(3)
+		task.wait(6)
 
 		local ok, err = pcall(function()
 			if useFirst then
@@ -45,7 +45,7 @@ task.spawn(function()
 				end
 			else
 				-- Ability #2: "Pulse Waves" tool
-				local tool = backpack:FindFirstChild("Arrow Rain")
+				local tool = backpack:GetChildren()[1]
 				if tool and tool:FindFirstChild("spellEvent") then
 					tool.spellEvent:FireServer()
 				end
