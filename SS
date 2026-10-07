@@ -34,18 +34,18 @@ task.spawn(function()
 	local useFirst = true
 
 	while true do
-		task.wait(3)
+		task.wait(6)
 
 		local ok, err = pcall(function()
 			if useFirst then
-				-- Ability #1: second child of Backpack
-				local tool = backpack:GetChildren()[2]
+				-- Ability #1: "Blade Storm" tool
+				local tool = backpack:FindFirstChild("Blade Storm")
 				if tool and tool:FindFirstChild("abilityEvent") then
 					tool.abilityEvent:FireServer()
 				end
 			else
-				-- Ability #2: "Arrow Rain" tool
-				local tool = backpack:GetChildren()[1]
+				-- Ability #2: second child of Backpack
+				local tool = backpack:GetChildren()[2]
 				if tool and tool:FindFirstChild("abilityEvent") then
 					tool.abilityEvent:FireServer()
 				end
@@ -59,6 +59,7 @@ task.spawn(function()
 		useFirst = not useFirst
 	end
 end)
+
 
 -- =========================================================
 -- Waypoint walker
