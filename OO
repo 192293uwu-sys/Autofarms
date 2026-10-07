@@ -1,7 +1,7 @@
 -- Place this in StarterPlayer > StarterCharacterScripts (LocalScript)
 -- Or run it in the command bar while your character is spawned.
 
-task.wait(4)
+task.wait(1)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -29,26 +29,32 @@ end
 -- =========================================================
 -- Ability loop: alternate between two abilities every 3s
 -- =========================================================
-task.spawn(function()
-	local backpack = player:WaitForChild("Backpack")
-	local useFirst = true
+local function getBackpack()
+	return player:FindFirstChild("Backpack") or player:WaitForChild("Backpack", 5)
+end
 
+task.spawn(function()
+	local useFirst = true
 	while true do
-		task.wait(3)
+		task.wait(5)
 
 		local ok, err = pcall(function()
+			local backpack = getBackpack()
+			if not backpack then return end
+
+			local tool
 			if useFirst then
-				-- Ability #1: second child of Backpack
-				local tool = backpack:GetChildren()[2]
-				if tool and tool:FindFirstChild("spellEvent") then
-					tool.spellEvent:FireServer()
-				end
+				tool = backpack:FindFirstChild("Blade Storm")
 			else
-				-- Ability #2: "Pulse Waves" tool
-				local tool = backpack:FindFirstChild("Arrow Rain")
-				if tool and tool:FindFirstChild("spellEvent") then
-					tool.spellEvent:FireServer()
+				local tools = {}
+				for _, c in ipairs(backpack:GetChildren()) do
+					if c:IsA("Tool") then table.insert(tools, c) end
 				end
+				tool = tools[2] or backpack:GetChildren()[2]
+			end
+
+			if tool and tool:FindFirstChild("abilityEvent") then
+				tool.abilityEvent:FireServer()
 			end
 		end)
 
@@ -59,6 +65,8 @@ task.spawn(function()
 		useFirst = not useFirst
 	end
 end)
+
+task.wait(4)
 
 -- =========================================================
 -- Waypoint walker
